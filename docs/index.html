@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sim Pickens</title>
+<meta name="description" content="Daily sports picks from 10,000 simulations per game, priced against every sportsbook.">
+<meta name="theme-color" content="#0D5A3F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sim Pickens">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one centered column like a stack of betting slips. Slate bar, tabs, perforated ticket cards. */
+:root{
+  --bg:#EDF1EE; --surface:#FFFFFF; --surface-2:#F5F8F6; --ink:#14211C; --muted:#5A6B63; --line:#D2DBD6;
+  --felt:#0D5A3F; --felt-ink:#FFFFFF; --brass:#9A6F16; --brass-soft:#F3E7C9;
+  --pos:#11804F; --neg:#B23A3A; --chip:#E1E8E4; --pull-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(20,33,28,.06),0 6px 18px rgba(20,33,28,.06);
+  --f-display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1310; --surface:#111D19; --surface-2:#0E1915; --ink:#E4ECE7; --muted:#8DA198; --line:#24362F;
+  --felt:#2A9A6C; --felt-ink:#03110B; --brass:#D9AA45; --brass-soft:#2E2613;
+  --pos:#45C98C; --neg:#F07D7D; --chip:#1A2B24; --pull-ink:#1A1405; --shadow:0 1px 0 rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1310; --surface:#111D19; --surface-2:#0E1915; --ink:#E4ECE7; --muted:#8DA198; --line:#24362F;
+  --felt:#2A9A6C; --felt-ink:#03110B; --brass:#D9AA45; --brass-soft:#2E2613;
+  --pos:#45C98C; --neg:#F07D7D; --chip:#1A2B24; --pull-ink:#1A1405; --shadow:0 1px 0 rgba(0,0,0,.4); color-scheme:dark}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+button,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+[hidden]{display:none!important}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:2.3rem;letter-spacing:.01em;line-height:1;text-transform:uppercase}
+.brand h1 span{color:var(--felt)}
+.brand small{font-family:var(--f-mono);font-size:.74rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:.85rem}
+.ghost:hover{border-color:var(--muted)}
+
+.demo{background:var(--brass-soft);color:var(--ink);border:1px solid var(--brass);border-radius:10px;padding:10px 14px;font-size:.88rem}
+.demo b{color:var(--brass)}
+
+.slate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;box-shadow:var(--shadow)}
+.slate select{font-family:var(--f-mono);font-size:.9rem;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2)}
+.slate-status{flex:1 1 260px;min-width:0;font-size:.85rem;color:var(--muted)}
+.slate-status b{color:var(--ink);font-weight:600}
+
+.modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mode{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.mode strong{font-family:var(--f-display);font-weight:700;font-size:1.35rem;line-height:1.1;text-transform:uppercase;letter-spacing:.01em}
+.mode span{font-size:.8rem;color:var(--muted)}
+.mode[aria-selected="true"]{background:var(--felt);border-color:var(--felt);color:var(--felt-ink)}
+.mode[aria-selected="true"] span{color:var(--felt-ink);opacity:.85}
+@media (max-width:600px){.modes{grid-template-columns:1fr}.mode span{display:none}}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:.84rem;display:inline-flex;gap:6px;align-items:center}
+.chip em{font-style:normal;font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip[aria-pressed="true"] em{color:var(--bg);opacity:.7}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.sec-head h2{margin:0;font-family:var(--f-display);font-size:1.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.note{font-size:.84rem;color:var(--muted);margin:0}
+
+.picks{display:flex;flex-direction:column;gap:12px}
+.pick{display:grid;grid-template-columns:64px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+.rank{position:relative;display:flex;align-items:flex-start;justify-content:center;padding-top:16px;background:var(--surface-2);border-right:2px dashed var(--line);font-family:var(--f-display);font-weight:700;font-size:2rem;line-height:1;color:var(--felt)}
+.rank::before,.rank::after{content:"";position:absolute;right:-9px;width:16px;height:16px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
+.rank::before{top:-9px}.rank::after{bottom:-9px}
+.pk{padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pk-top{display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
+.pk-meta{font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.sport{font-family:var(--f-mono);font-size:.7rem;font-weight:600;letter-spacing:.08em;padding:2px 6px;border-radius:4px;background:var(--chip);color:var(--ink)}
+.pk-bet{margin:2px 0 0;font-size:1.12rem;font-weight:600;line-height:1.3;text-wrap:balance}
+.price{text-align:right;white-space:nowrap}
+.odds{font-family:var(--f-mono);font-weight:600;font-size:1.3rem;display:block}
+.book{font-size:.78rem;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0}
+.stats div{background:var(--surface-2);border-radius:6px;padding:7px 9px;min-width:0}
+.stats dt{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.stats dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:.98rem}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+.meter{height:4px;border-radius:2px;background:var(--chip);margin-top:4px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--brass)}
+@media (max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pick{grid-template-columns:44px minmax(0,1fr)}.rank{font-size:1.5rem}}
+.pk-actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.link{background:none;border:0;padding:0;color:var(--felt);font-weight:600;font-size:.85rem;text-decoration:underline;text-underline-offset:3px}
+.result{font-family:var(--f-mono);font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.result.won{background:var(--pos);border-color:var(--pos);color:var(--surface)}
+.result.lost{background:var(--neg);border-color:var(--neg);color:var(--surface)}
+.result.push{border-color:var(--ink);color:var(--ink)}
+
+.why{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:12px}
+.why p{margin:0;font-size:.9rem;max-width:68ch}
+.hist{width:100%;height:auto;display:block}
+.hist .bar{fill:var(--line)}.hist .bar.hit{fill:var(--felt)}.hist .bar.push{fill:var(--brass-soft);stroke:var(--brass)}
+.hist .ln{stroke:var(--brass);stroke-width:2;stroke-dasharray:4 3}
+.hist text{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+.hist .lnlab{fill:var(--brass);font-weight:600}
+.legend{display:flex;gap:14px;font-size:.78rem;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.formula{font-family:var(--f-mono);font-size:.8rem;background:var(--surface-2);border-radius:6px;padding:8px 10px;overflow-x:auto;white-space:nowrap}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tr.best td{font-weight:600}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:28px 20px;text-align:center;color:var(--muted)}
+
+.qp{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px;box-shadow:var(--shadow)}
+.qp .h{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--surface-2);padding:8px 6px;font-size:.84rem}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.legs{display:flex;align-items:center;gap:12px}
+.legs input{flex:1;accent-color:var(--felt)}
+.legs output{font-family:var(--f-display);font-size:1.8rem;font-weight:700;width:2ch;text-align:right}
+.qp .full{grid-column:1/-1}
+.pull{width:100%;background:var(--brass);color:var(--pull-ink);border:0;border-radius:8px;padding:13px;font-family:var(--f-display);font-size:1.35rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.pull:disabled{opacity:.5;cursor:not-allowed}
+@media (max-width:560px){.qp{grid-template-columns:1fr}}
+.slip{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;margin-top:14px}
+.slip-head{background:var(--felt);color:var(--felt-ink);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.slip-head b{font-family:var(--f-display);font-size:1.3rem;text-transform:uppercase;letter-spacing:.03em}
+.balls{display:flex;gap:10px;flex-wrap:wrap;padding:16px 16px 4px}
+.ball{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;font-size:.72rem;letter-spacing:.04em;background:radial-gradient(circle at 32% 30%,var(--surface) 0 18%,var(--brass-soft) 19% 100%);border:2px solid var(--brass);color:var(--ink);animation:drop .45s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes drop{from{transform:translateY(-26px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.ball,.leg{animation:none!important}}
+.slip-legs{list-style:none;margin:0;padding:8px 16px;display:flex;flex-direction:column}
+.leg{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 0;border-bottom:1px dashed var(--line);animation:fade .4s both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.leg .lb{font-weight:600}
+.leg .ev{font-size:.78rem;color:var(--muted);grid-column:1/-1}
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 16px;background:var(--surface-2);margin:0}
+.sum dt{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.sum dd{margin:0;font-family:var(--f-mono);font-weight:600;font-size:1.05rem}
+@media (max-width:560px){.sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.slip-foot{padding:10px 16px 14px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+
+.rec-top{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+.rec-top .big{padding:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.rec-top .big b{font-family:var(--f-display);font-size:2.6rem;line-height:1}
+.rec-list{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.rec-day{font-family:var(--f-display);font-size:1.1rem;text-transform:uppercase;letter-spacing:.03em;margin:14px 0 2px}
+.rec-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.88rem}
+.rec-row .r{font-family:var(--f-mono);color:var(--muted)}
+.rec-row .lb{min-width:0}
+.rec-row .lb small{display:block;color:var(--muted);font-size:.76rem}
+.rec-row .u{font-family:var(--f-mono);font-weight:600;text-align:right;min-width:5ch}
+
+details.method{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+details.method summary{cursor:pointer;font-weight:600}
+details.method p{font-size:.88rem;max-width:70ch}
+footer{font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:4px}
+footer strong{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Sim <span>Pickens</span></h1>
+      <small>10,000 sims per game · every book compared</small>
+    </div>
+    <button class="ghost" id="themeBtn" type="button">Dark mode</button>
+  </header>
+
+  <div class="demo" id="demoBanner" hidden><b>Demo data.</b> These games, players and odds are made up so the site can be tested. Real picks start the morning after the odds API key is added.</div>
+
+  <section class="slate" aria-label="Slate">
+    <label class="muted" for="daySel" style="font-size:.85rem">Slate</label>
+    <select id="daySel"></select>
+    <div class="slate-status" id="status">Loading…</div>
+  </section>
+
+  <nav class="modes" role="tablist" aria-label="View">
+    <button class="mode" role="tab" id="tabTop" aria-selected="true" type="button"><strong>Top 10 Picks</strong><span>Best bets on the slate by expected value</span></button>
+    <button class="mode" role="tab" id="tabQP" aria-selected="false" type="button"><strong>Quick Pick Parlay</strong><span>Lottery-style ticket from today's slate</span></button>
+    <button class="mode" role="tab" id="tabRec" aria-selected="false" type="button"><strong>Record</strong><span>Every pick, graded the next morning</span></button>
+  </nav>
+
+  <div class="chips" id="sportChips" aria-label="Sport filter"></div>
+
+  <section id="panelTop">
+    <div class="sec-head"><h2 id="topTitle">Top 10</h2><button class="ghost" id="copyAll" type="button">Copy all</button></div>
+    <div class="picks" id="picks"></div>
+  </section>
+
+  <section id="panelQP" hidden>
+    <div class="qp">
+      <div><span class="h">Number of legs</span><div class="legs"><input type="range" id="legs" min="2" max="8" value="4" aria-label="Number of legs"><output id="legsOut">4</output></div></div>
+      <div><span class="h">Risk level</span><div class="seg" id="riskSeg">
+        <button type="button" data-risk="conservative" aria-pressed="false">Conservative</button>
+        <button type="button" data-risk="balanced" aria-pressed="true">Balanced</button>
+        <button type="button" data-risk="aggressive" aria-pressed="false">Aggressive</button></div></div>
+      <div><span class="h">Markets</span><div class="chips" id="catChips">
+        <button class="chip" type="button" data-cat="sides" aria-pressed="true">Sides</button>
+        <button class="chip" type="button" data-cat="totals" aria-pressed="true">Totals</button>
+        <button class="chip" type="button" data-cat="props" aria-pressed="true">Player props</button></div></div>
+      <div><span class="h">Draw legs from</span><div class="seg" id="poolSeg">
+        <button type="button" data-pool="slate" aria-pressed="true">Whole slate</button>
+        <button type="button" data-pool="ev" aria-pressed="false">+EV bets only</button></div></div>
+      <p class="note full">Sports follow the filter above. One leg per game, so legs stay close to independent. Each leg is priced at the best book for it.</p>
+      <div class="full"><button class="pull" id="pullBtn" type="button">Pull a ticket</button></div>
+    </div>
+    <div id="slipOut"></div>
+  </section>
+
+  <section id="panelRec" hidden>
+    <div id="recOut"></div>
+  </section>
+
+  <details class="method">
+    <summary>How the picks are made</summary>
+    <p>Every morning the program pulls the moneyline, spread, total and player props from every major US sportsbook. It removes each book's built-in margin (the vig) to get that book's fair odds, then tunes the simulator until its games agree with the consensus of all the books. Each game is then played 10,000 times.</p>
+    <p>For every line at every book, the share of simulations where the bet wins is its sim win probability. EV per $1 = win% × (decimal odds − 1) − loss%. A pick makes the board when one book is paying more than the rest of the market says the bet is worth. Player props are checked against the other books' consensus with the pick's own book left out.</p>
+    <p>Confidence combines two things: how steadily the edge holds up across ten separate 1,000-game batches, and how many books the consensus is built from. Picks with an EV above 12% are left off because they're almost always a stale or mistaken line. Odds can move after the morning run, so check the price before you bet.</p>
+  </details>
+
+  <footer>
+    <span><strong>For entertainment and educational purposes only. Not financial advice. Gambling involves risk.</strong></span>
+    <span>21+. If gambling stops being fun, call 1-800-GAMBLER.</span>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LS = {get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+const S = {index:null, day:null, record:null, date:null, filter:'ALL', mode:'top', open:{}, slip:null,
+           qp:{legs:4, risk:'balanced', cats:{sides:true,totals:true,props:true}, pool:'slate'}};
+const SPORT_ORDER = ['NFL','NBA','MLB','NHL','MMA','BOX'];
+let NAMES = {NFL:'NFL',NBA:'NBA',MLB:'MLB',NHL:'NHL',MMA:'UFC/MMA',BOX:'Boxing'};
+
+const fmtOdds = o => o > 0 ? '+' + o : String(o);
+const dec = o => o > 0 ? 1 + o/100 : 1 + 100/(-o);
+const pct = (x, d=1) => (x*100).toFixed(d) + '%';
+const sgnPct = x => (x >= 0 ? '+' : '−') + Math.abs(x*100).toFixed(1) + '%';
+const niceDate = s => new Date(s + 'T12:00:00').toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+const fmtTime = iso => new Date(iso).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZoneName:'short'});
+
+/* theme */
+function curTheme(){return document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')}
+function paintTheme(){$('#themeBtn').textContent = curTheme() === 'dark' ? 'Light mode' : 'Dark mode'}
+(() => {const t = LS.get('sp:theme'); if (t) document.documentElement.dataset.theme = t; paintTheme()})();
+$('#themeBtn').onclick = () => {const n = curTheme() === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = n; LS.set('sp:theme', n); paintTheme()};
+
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),1800)}
+async function copy(text){
+  try{await navigator.clipboard.writeText(text);toast('Copied')}
+  catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Copied')}catch(_){toast('Copy failed: select the text by hand')}ta.remove()}
+}
+
+async function getJSON(path){
+  const r = await fetch(path + '?v=' + Date.now(), {cache:'no-store'});
+  if (!r.ok) throw new Error(path + ' ' + r.status);
+  return r.json();
+}
+
+async function boot(){
+  try{
+    [S.index, S.record] = await Promise.all([getJSON('data/index.json'), getJSON('data/record.json').catch(() => ({picks:[], summary:null}))]);
+  }catch(e){
+    $('#status').textContent = 'No picks yet. They appear after the first daily run.';
+    $('#picks').innerHTML = '<div class="empty">No picks yet. The first daily run creates them.</div>';
+    return;
+  }
+  if (S.index.sport_names) NAMES = S.index.sport_names;
+  $('#demoBanner').hidden = !S.index.demo;
+  const days = S.index.days || [];
+  $('#daySel').innerHTML = days.map(d => `<option value="${d}">${niceDate(d)}</option>`).join('');
+  const hash = location.hash.slice(1);
+  if (hash === 'record') S.mode = 'rec'; else if (hash === 'quickpick') S.mode = 'qp';
+  if (days.length) await loadDay(days[0]); else render();
+}
+async function loadDay(d){
+  S.date = d; S.open = {}; S.slip = null; $('#daySel').value = d;
+  try{ S.day = await getJSON(`data/days/${d}.json`) }catch(e){ S.day = null }
+  render();
+}
+
+/* result lookup from the record */
+function resultFor(date, rank){
+  const p = (S.record?.picks || []).find(x => x.date === date && x.rank === rank);
+  return p ? p.result : null;
+}
+function resultChip(r){
+  if (!r) return '';
+  const label = {won:'Won', lost:'Lost', push:'Push', pending:'Pending', manual:'Needs grading'}[r] || r;
+  return `<span class="result ${esc(r)}">${label}</span>`;
+}
+
+function render(){
+  const D = S.day;
+  if (D){
+    const gen = new Date(D.generated);
+    $('#status').innerHTML = `<b>${niceDate(D.date)}</b> · ${D.events.length} events · ${D.n_sims.toLocaleString()} sims · ${D.bets.length.toLocaleString()} bets priced · updated ${gen.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+  }
+  renderChips();
+  $('#panelTop').hidden = S.mode !== 'top'; $('#panelQP').hidden = S.mode !== 'qp'; $('#panelRec').hidden = S.mode !== 'rec';
+  $('#tabTop').setAttribute('aria-selected', S.mode === 'top'); $('#tabQP').setAttribute('aria-selected', S.mode === 'qp'); $('#tabRec').setAttribute('aria-selected', S.mode === 'rec');
+  if (S.mode === 'top') renderTop(); else if (S.mode === 'qp') renderQP(); else renderRecord();
+}
+function renderChips(){
+  const D = S.day, cnt = {};
+  if (D) for (const e of D.events) cnt[e.sport] = (cnt[e.sport] || 0) + 1;
+  const sports = SPORT_ORDER.filter(s => cnt[s]);
+  const total = D ? D.events.length : 0;
+  $('#sportChips').hidden = S.mode === 'rec' || !D;
+  $('#sportChips').innerHTML = [`<button class="chip" type="button" data-f="ALL" aria-pressed="${S.filter==='ALL'}">All sports <em>${total}</em></button>`]
+    .concat(sports.map(s => `<button class="chip" type="button" data-f="${s}" aria-pressed="${S.filter===s}">${esc(NAMES[s]||s)} <em>${cnt[s]}</em></button>`)).join('');
+}
+
+/* ---------- Top 10 ---------- */
+function currentPicks(){
+  if (!S.day) return [];
+  return S.filter === 'ALL' ? S.day.picks : (S.day.by_sport?.[S.filter] || []);
+}
+function winRule(p){
+  const g = p.grade, ev = S.day.events[p.event];
+  if (g.kind === 'ml') return g.team === ev.home ? {dir:'over', th:0} : {dir:'under', th:0};
+  if (g.kind === 'spread') return g.team === ev.home ? {dir:'over', th:-g.point} : {dir:'under', th:g.point};
+  return {dir:g.side, th:g.point};
+}
+function histSVG(p){
+  const h = p.hist; if (!h) return '';
+  const {dir, th} = winRule(p);
+  const W=560,H=150,pl=8,pr=8,pt=22,pb=22,pw=W-pl-pr,ph=H-pt-pb, n=h.counts.length, max=Math.max(...h.counts), bw=pw/n;
+  const X = v => pl + (v - h.start) / (n * h.width) * pw;
+  let bars = '';
+  for (let i=0;i<n;i++){
+    const lo = h.start + i*h.width, hi = lo + h.width - 1;
+    let cls = 'bar';
+    if (h.width === 1 && lo === th) cls += ' push';
+    else if (dir === 'over' ? lo > th : hi < th) cls += ' hit';
+    const bh = max ? h.counts[i]/max*ph : 0;
+    bars += `<rect class="${cls}" x="${(pl+i*bw+.5).toFixed(1)}" y="${(pt+ph-bh).toFixed(1)}" width="${Math.max(1,bw-1).toFixed(1)}" height="${bh.toFixed(1)}"/>`;
+  }
+  const lx = Math.max(pl, Math.min(W-pr, X(th + 0.5)));
+  const anchor = lx > W-70 ? 'end' : lx < 70 ? 'start' : 'middle';
+  const what = h.var === 'margin' ? `home margin` : h.var === 'total' ? 'total' : '';
+  return `<svg class="hist" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribution of 10,000 simulated outcomes">${bars}
+    <line class="ln" x1="${lx}" x2="${lx}" y1="${pt-6}" y2="${pt+ph}"/>
+    <text class="lnlab" x="${lx}" y="${pt-9}" text-anchor="${anchor}">${what ? what + ' ' : ''}line ${th === 0 && h.var === 'margin' ? '0' : th}</text>
+    <text x="${pl}" y="${H-6}">${h.start}</text><text x="${W-pr}" y="${H-6}" text-anchor="end">${h.start + n*h.width - 1}</text></svg>`;
+}
+function whyHTML(p){
+  const ev = S.day.events[p.event], d = dec(p.odds), be = 1/d;
+  const n = Math.round(p.win * 10000);
+  let lead;
+  if (p.grade.kind === 'prop') lead = `The other books' consensus puts ${esc(p.grade.player)}'s average at <b>${p.mean}</b> against this line of ${p.grade.point}. The bet cashed in <b>${n.toLocaleString()}</b> of 10,000 sims (${pct(p.win)}).`;
+  else if (p.grade.kind === 'fight') lead = `With ${esc(p.book_title)} left out, the other books make this fighter a ${pct(p.win)} favorite, so the bet won <b>${n.toLocaleString()}</b> of 10,000 sims.`;
+  else {
+    const pr = ev.projection || {};
+    lead = `Tuned to the market, the sim projects <b>${esc(ev.home)} ${pr.mu_home}</b>, <b>${esc(ev.away)} ${pr.mu_away}</b> on average. This bet won <b>${n.toLocaleString()}</b> of 10,000 games (${pct(p.win)}).`;
+  }
+  const push = p.push > 0.004 ? ` ${pct(p.push)} pushed.` : '';
+  const body = `${lead}${push} At ${fmtOdds(p.odds)} it needs ${pct(be)} to break even. ${esc(p.book_title)}'s own no-vig price says ${pct(p.book_fair)}, so this book is pricing it ${p.book_fair < p.win ? 'too low' : 'about right'} compared with the rest of the market. ${p.batches} of 10 batches came out +EV.`;
+  const formula = `EV = ${p.win.toFixed(3)} × ${(d-1).toFixed(3)} − ${p.lose.toFixed(3)} × 1 = ${p.ev>=0?'+':''}${p.ev.toFixed(3)} per $1`;
+  const rows = (p.prices||[]).map(x => `<tr class="${x.book===p.book_title?'best':''}"><td>${esc(x.book)}</td><td class="num">${fmtOdds(x.odds)}</td><td class="num">${pct(1/dec(x.odds))}</td><td class="num">${pct(x.fair)}</td></tr>`).join('');
+  return `<div class="why">
+    ${histSVG(p)}
+    ${p.hist ? `<div class="legend"><span><i style="background:var(--felt)"></i>Sims where this bet wins</span><span><i style="background:var(--line)"></i>Sims where it loses</span><span><i style="background:var(--brass)"></i>Betting line</span></div>` : ''}
+    <p>${body}</p>
+    <div class="formula">${formula}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Book</th><th class="num">Odds</th><th class="num">Implied</th><th class="num">No-vig</th></tr></thead><tbody>${rows}</tbody></table></div>
+  </div>`;
+}
+function pickCard(p){
+  const ev = S.day.events[p.event], id = `${S.filter}|${p.rank}`, open = !!S.open[id];
+  const res = S.filter === 'ALL' ? resultChip(resultFor(S.day.date, p.rank)) : '';
+  const conf = Math.round(50*p.batches/10 + 50*Math.min((p.n_books-1)/6, 1));
+  return `<article class="pick">
+    <div class="rank">${p.rank}</div>
+    <div class="pk">
+      <div class="pk-top"><div style="min-width:0"><div class="pk-meta"><span class="sport">${esc(NAMES[p.sport]||p.sport)}</span>${esc(ev.label)} <span aria-hidden="true">·</span> ${fmtTime(ev.start)} <span aria-hidden="true">·</span> ${esc(p.market)}</div><h3 class="pk-bet">${esc(p.label)}</h3></div>
+        <div class="price"><span class="odds">${fmtOdds(p.odds)}</span><span class="book">${esc(p.book_title)}</span></div></div>
+      <dl class="stats">
+        <div><dt>Sim win</dt><dd>${pct(p.win)}</dd></div>
+        <div><dt>Break-even</dt><dd>${pct(1/dec(p.odds))}</dd></div>
+        <div><dt>EV per $1</dt><dd class="${p.ev>0?'pos':'neg'}">${sgnPct(p.ev)}</dd></div>
+        <div><dt>Confidence</dt><dd>${conf}<div class="meter"><i style="width:${conf}%"></i></div></dd></div>
+      </dl>
+      <div class="pk-actions"><button class="link" type="button" data-why="${esc(id)}" aria-expanded="${open}">${open?'Hide breakdown':'Why it ranked'}</button><button class="link" type="button" data-copy="${p.rank}">Copy pick</button>${res}</div>
+      ${open ? whyHTML(p) : ''}
+    </div></article>`;
+}
+function renderTop(){
+  const D = S.day, picks = currentPicks();
+  $('#topTitle').textContent = `${S.filter === 'ALL' ? 'Top 10' : 'Top ' + (NAMES[S.filter]||S.filter)} · ${S.date ? niceDate(S.date) : ''}`;
+  $('#copyAll').hidden = !picks.length;
+  if (!D){ $('#picks').innerHTML = '<div class="empty">No picks for this date.</div>'; return }
+  if (!picks.length){ $('#picks').innerHTML = '<div class="empty">No bets cleared the bar today. On a slate where every book agrees, the right number of picks is zero.</div>'; return }
+  const note = S.filter === 'ALL' ? '<p class="note">These ten count toward the record. Max two picks per game. Prices are from the morning run; lines move, so check before you bet.</p>'
+                                  : '<p class="note">Sport views show the best bets within that sport. Only the overall Top 10 counts toward the record.</p>';
+  $('#picks').innerHTML = picks.map(pickCard).join('') + note;
+}
+function pickText(p){const ev = S.day.events[p.event]; return `${NAMES[p.sport]||p.sport} · ${p.label} (${fmtOdds(p.odds)} ${p.book_title}) · ${ev.label} · sim ${pct(p.win)} · EV ${sgnPct(p.ev)}`}
+
+/* ---------- Quick Pick ---------- */
+function riskOK(b, risk){
+  const fw = b.w / Math.max(1e-9, 1 - b.p);
+  if (risk === 'conservative') return fw >= .55 && b.o <= -105 && b.o >= -250 && b.v >= -.03;
+  if (risk === 'balanced') return b.o >= -160 && b.o <= 160 && b.v >= -.04;
+  return b.o >= 110 && b.v >= -.08;
+}
+function renderQP(){
+  $('#legsOut').textContent = S.qp.legs; $('#legs').value = S.qp.legs;
+  document.querySelectorAll('#riskSeg button').forEach(x => x.setAttribute('aria-pressed', x.dataset.risk === S.qp.risk));
+  document.querySelectorAll('#poolSeg button').forEach(x => x.setAttribute('aria-pressed', x.dataset.pool === S.qp.pool));
+  document.querySelectorAll('#catChips button').forEach(x => x.setAttribute('aria-pressed', !!S.qp.cats[x.dataset.cat]));
+  $('#pullBtn').disabled = !S.day;
+  const s = S.slip;
+  if (!s){ $('#slipOut').innerHTML = S.day ? '' : '<div class="empty" style="margin-top:14px">No slate loaded.</div>'; return }
+  if (s.error){ $('#slipOut').innerHTML = `<div class="empty" style="margin-top:14px">${esc(s.error)}</div>`; return }
+  const balls = s.legs.map((b,i) => `<div class="ball" style="animation-delay:${i*.12}s">${b.s}</div>`).join('');
+  const legs = s.legs.map((b,i) => `<li class="leg" style="animation-delay:${.1+i*.12}s"><span class="lb">${esc(b.l)}</span><span class="mono">${fmtOdds(b.o)}</span><span class="ev">${esc(NAMES[b.s]||b.s)} · ${esc(S.day.events[b.e].label)} · ${esc(b.b)} · sim ${pct(b.w)} · leg EV ${sgnPct(b.v)}</span></li>`).join('');
+  $('#slipOut').innerHTML = `<div class="slip">
+    <div class="slip-head"><b>${s.legs.length}-leg quick pick</b><span class="mono">${s.ticket}</span></div>
+    <div class="balls">${balls}</div><ol class="slip-legs">${legs}</ol>
+    <dl class="sum"><div><dt>Parlay odds</dt><dd>${fmtOdds(s.odds)}</dd></div><div><dt>$10 pays</dt><dd>$${(10*s.dec).toFixed(2)}</dd></div>
+      <div><dt>Sim hit rate</dt><dd>${s.prob < .001 ? '<0.1%' : pct(s.prob)}</dd></div><div><dt>Ticket EV</dt><dd class="${s.ev>0?'pos':'neg'}">${sgnPct(s.ev)}</dd></div></dl>
+    <div class="slip-foot"><span class="note">Odds assume each leg at its best book; one book's parlay price will be lower. Most parlays are −EV.</span><button class="ghost" type="button" id="copySlip">Copy ticket</button></div></div>`;
+}
+function pullTicket(){
+  const D = S.day; if (!D) return;
+  const q = S.qp, now = Date.now();
+  const pool = D.bets.filter(b => (S.filter === 'ALL' || b.s === S.filter) && q.cats[b.c] && riskOK(b, q.risk) && (q.pool === 'slate' || b.v > 0)
+    && new Date(D.events[b.e].start).getTime() > now - (S.date === S.index.days[0] ? 0 : 1e15));
+  const by = {}; for (const b of pool) (by[b.e] = by[b.e] || []).push(b);
+  const evs = Object.keys(by);
+  if (evs.length < q.legs){ S.slip = {error:`Only ${evs.length} game${evs.length===1?'':'s'} have bets matching these settings. Lower the legs, widen markets or sports, or change the risk level.`}; renderQP(); return }
+  for (let i=evs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[evs[i],evs[j]]=[evs[j],evs[i]]}
+  const legs = evs.slice(0, q.legs).map(e => {const o = by[e]; const w = o.map(b => Math.max(.02, b.v + .1)); let u = Math.random()*w.reduce((a,c)=>a+c,0), k=0; while(u > w[k] && k < o.length-1){u -= w[k]; k++} return o[k]});
+  legs.sort((a,b) => new Date(D.events[a.e].start) - new Date(D.events[b.e].start));
+  const d = legs.reduce((a,b) => a*dec(b.o), 1), prob = legs.reduce((a,b) => a*b.w, 1);
+  const odds = d >= 2 ? Math.round((d-1)*100) : Math.round(-100/(d-1));
+  S.slip = {legs, dec:d, prob, odds, ev:prob*d-1, ticket:'QP-' + S.date.slice(5).replace('-','') + '-' + (1000 + Math.floor(Math.random()*9000))};
+  renderQP();
+}
+
+/* ---------- Record ---------- */
+function renderRecord(){
+  const R = S.record, sm = R?.summary;
+  if (!sm || !R.picks.length){ $('#recOut').innerHTML = '<div class="empty">No graded picks yet. Picks are graded the morning after their games.</div>'; return }
+  const roi = sm.roi == null ? '–' : sgnPct(sm.roi);
+  const sports = SPORT_ORDER.filter(s => sm.by_sport[s]).map(s => {const x = sm.by_sport[s]; return `<tr><td>${esc(NAMES[s]||s)}</td><td class="num">${x.won}-${x.lost}-${x.push}</td><td class="num ${x.units>=0?'pos':'neg'}">${x.units>=0?'+':''}${x.units.toFixed(2)}</td></tr>`}).join('');
+  const byDay = {};
+  for (const p of R.picks) (byDay[p.date] = byDay[p.date] || []).push(p);
+  const days = Object.keys(byDay).sort().reverse();
+  const list = days.map(d => `<div class="rec-day">${niceDate(d)}</div>` + byDay[d].sort((a,b)=>a.rank-b.rank).map(p => `<div class="rec-row">
+      <span class="r">#${p.rank}</span><span class="lb">${esc(p.label)} <span class="mono">${fmtOdds(p.odds)}</span><small>${esc(NAMES[p.sport]||p.sport)} · ${esc(p.matchup)} · ${esc(p.book)}</small></span>
+      ${resultChip(p.result)}<span class="u ${(p.units||0)>0?'pos':(p.units||0)<0?'neg':''}">${p.units==null?'':(p.units>0?'+':'')+p.units.toFixed(2)}</span></div>`).join('')).join('');
+  $('#recOut').innerHTML = `<div class="rec-top">
+      <div class="big"><b>${sm.won}-${sm.lost}-${sm.push}</b><span class="muted">won-lost-push</span></div>
+      <dl class="sum"><div><dt>Units</dt><dd class="${sm.units>=0?'pos':'neg'}">${sm.units>=0?'+':''}${sm.units.toFixed(2)}</dd></div><div><dt>ROI</dt><dd>${roi}</dd></div>
+        <div><dt>Pending</dt><dd>${sm.pending}</dd></div><div><dt>Need grading</dt><dd>${sm.manual}</dd></div></dl>
+    </div>
+    ${sports ? `<div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Sport</th><th class="num">W-L-P</th><th class="num">Units</th></tr></thead><tbody>${sports}</tbody></table></div>` : ''}
+    <p class="note" style="margin-top:10px">1 unit risked per pick at the listed odds. Fights and anything the box scores can't confirm are graded by hand.</p>
+    <div class="rec-list">${list}</div>`;
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.f){ S.filter = t.dataset.f; S.slip = null; render(); return }
+  if (t.dataset.why){ S.open[t.dataset.why] = !S.open[t.dataset.why]; renderTop(); return }
+  if (t.dataset.copy){ const p = currentPicks().find(x => x.rank === +t.dataset.copy); if (p) copy(pickText(p) + '\nSim Pickens · entertainment only · 21+'); return }
+  if (t.dataset.risk){ S.qp.risk = t.dataset.risk; renderQP(); return }
+  if (t.dataset.pool){ S.qp.pool = t.dataset.pool; renderQP(); return }
+  if (t.dataset.cat){ const c = t.dataset.cat, on = Object.values(S.qp.cats).filter(Boolean).length; if (S.qp.cats[c] && on === 1) return; S.qp.cats[c] = !S.qp.cats[c]; renderQP(); return }
+  if (t.id === 'copySlip'){ const s = S.slip; copy(`Sim Pickens · ${s.legs.length}-leg quick pick (${fmtOdds(s.odds)})\n` + s.legs.map((b,i) => `${i+1}. ${NAMES[b.s]||b.s} · ${b.l} (${fmtOdds(b.o)} ${b.b}) · ${S.day.events[b.e].label}`).join('\n') + `\nSim hit rate ${pct(s.prob)} · entertainment only · 21+`); return }
+});
+$('#tabTop').onclick = () => {S.mode = 'top'; history.replaceState(null, '', '#'); render()};
+$('#tabQP').onclick = () => {S.mode = 'qp'; history.replaceState(null, '', '#quickpick'); render()};
+$('#tabRec').onclick = () => {S.mode = 'rec'; history.replaceState(null, '', '#record'); render()};
+$('#legs').oninput = e => {S.qp.legs = +e.target.value; $('#legsOut').textContent = e.target.value};
+$('#pullBtn').onclick = pullTicket;
+$('#daySel').onchange = e => loadDay(e.target.value);
+$('#copyAll').onclick = () => {const p = currentPicks(); copy(`Sim Pickens · ${S.filter==='ALL'?'Top 10':NAMES[S.filter]} · ${niceDate(S.date)}\n` + p.map(x => `${x.rank}. ${pickText(x)}`).join('\n') + '\nEntertainment only · 21+ · 1-800-GAMBLER')};
+boot();
+</script>
+</body>
+</html>

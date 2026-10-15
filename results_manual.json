@@ -1,0 +1,5 @@
+{
+  "help": "Grade a pick by hand: add a line inside results below as \"YYYY-MM-DD #rank\": \"won\" (or \"lost\" or \"push\"). Example: \"2026-10-18 #4\": \"won\". Separate lines with commas.",
+  "results": {
+  }
+}
